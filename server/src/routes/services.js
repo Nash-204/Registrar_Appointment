@@ -17,12 +17,12 @@ const withReqs = async (services, onlyActive) => {
 // Public: active services with their active checklist items (used by the booking wizard and the home page carousel).
 r.get('/', async (_req, res) => {
   const [rows] = await pool.query(
-    'SELECT id, purpose, grp, icon, summary, note, duration_minutes FROM services WHERE is_active=1 ORDER BY sort_order, id');
+    'SELECT id, purpose, grp, icon, summary, note, details, duration_minutes FROM services WHERE is_active=1 ORDER BY sort_order, id');
   res.json(await withReqs(rows, true));
 });
 
 r.get('/admin', requireAuth('admin'), async (_req, res) => {
-  const [rows] = await pool.query('SELECT id, purpose, grp, icon, summary, note, duration_minutes, is_active FROM services ORDER BY sort_order, id');
+  const [rows] = await pool.query('SELECT id, purpose, grp, icon, summary, note, details, duration_minutes, is_active FROM services ORDER BY sort_order, id');
   const [counts] = await pool.query('SELECT service_id, COUNT(*) n FROM employee_services GROUP BY service_id');
   const out = await withReqs(rows, false);
   res.json(out.map((s) => ({ ...s, staff_count: Number(counts.find((c) => c.service_id === s.id)?.n || 0) })));
@@ -72,8 +72,8 @@ r.post('/', requireAuth('admin'), async (req, res) => {
     }
     const [[{ n }]] = await conn.query('SELECT COALESCE(MAX(sort_order),0)+1 n FROM services');
     const [ins] = await conn.query(
-      'INSERT INTO services (purpose, grp, icon, summary, note, duration_minutes, is_active, sort_order) VALUES (?,?,?,?,?,?,1,?)',
-      [d.purpose, d.grp, d.icon, d.summary, d.note, d.duration_minutes, n]);
+      'INSERT INTO services (purpose, grp, icon, summary, note, details, duration_minutes, is_active, sort_order) VALUES (?,?,?,?,?,?,?,1,?)',
+      [d.purpose, d.grp, d.icon, d.summary, d.note, d.details, d.duration_minutes, n]);
     newId = ins.insertId;
     for (const eid of d.employee_ids) await conn.query('INSERT INTO employee_services (employee_id, service_id) VALUES (?,?)', [eid, newId]);
     await conn.commit();

@@ -28,7 +28,7 @@ let dirty = true;
 async function databaseFacts() {
   const st = await getSettings();
   const o = officeInfo();
-  const [services] = await pool.query('SELECT id, purpose, grp, summary, note, duration_minutes FROM services WHERE is_active=1 ORDER BY sort_order, id');
+  const [services] = await pool.query('SELECT id, purpose, grp, summary, note, details, duration_minutes FROM services WHERE is_active=1 ORDER BY sort_order, id');
   const [reqs] = await pool.query("SELECT service_id, label, detail, kind FROM service_requirements WHERE is_active=1 ORDER BY kind='conditional', sort_order, id");
   const contact = [process.env.OFFICE_PHONE && `Phone: ${process.env.OFFICE_PHONE}`, process.env.OFFICE_EMAIL && `Email: ${process.env.OFFICE_EMAIL}`].filter(Boolean);
 
@@ -65,6 +65,7 @@ async function databaseFacts() {
       `# ${s.purpose}`,
       `Group: ${s.grp}. A visit takes about ${s.duration_minutes} minutes.`,
       s.summary,
+      s.details ? `What ${s.purpose} is for:\n\n${s.details}` : '',
       must.length ? `Documents to bring for ${s.purpose}:\n${must.join('\n')}` : '',
       maybe.length ? `Documents that may also be needed for ${s.purpose}, depending on the situation:\n${maybe.join('\n')}` : '',
       s.note ? `Note: ${s.note}` : '',

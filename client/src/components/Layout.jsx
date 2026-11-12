@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, Link, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { Menu, X, MapPin, Phone, Mail, Clock } from 'lucide-react';
 import Chatbot from './Chatbot.jsx';
 import Logo from './Logo.jsx';
@@ -9,6 +9,12 @@ const links = [['/', 'Home'], ['/about', 'About Us'], ['/appointment', 'Appointm
 
 export default function Layout() {
   const [open, setOpen] = useState(false);
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (!hash) { window.scrollTo(0, 0); return undefined; }
+    const t = setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    return () => clearTimeout(t);
+  }, [pathname, hash]);
   const cls = ({ isActive }) =>
     `rounded-full px-5 py-2 text-sm font-semibold transition-colors ${isActive ? 'bg-seal text-ink' : 'text-white/85 hover:bg-white/10 hover:text-white'}`;
   return (

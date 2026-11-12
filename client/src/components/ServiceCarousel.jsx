@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronLeft, ChevronRight, Clock, FilePlus, FilePlus2, FileText, HelpCircle, MapPin, Pencil, UserCheck, Users } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { api } from '../api.js';
+import { SERVICE_ICONS as ICONS } from '../serviceIcons.js';
 
 const GROUPS = ['All', 'Register', 'Correction', 'Request', 'Other services'];
-const ICONS = { register: FilePlus2, correction: Pencil, request: FileText, late: Clock, supplemental: FilePlus, acknowledgment: Users, legitimation: UserCheck, out: MapPin, other: HelpCircle };
 
 export default function ServiceCarousel() {
   const [services, setServices] = useState(null);
@@ -68,8 +68,9 @@ export default function ServiceCarousel() {
                 <ul className="mt-2 space-y-2 text-ink/80">{maybe.map((d) => <li key={d.id} className="flex gap-2 text-sm"><span className="mt-0.5 w-4 shrink-0 text-center text-ink/40">+</span><span>{d.label}</span></li>)}</ul>
               </>}
               {s.note && <p className="mt-4 rounded-lg bg-mist px-3 py-2 text-xs text-ink/75">{s.note}</p>}
-              <div className="mt-auto pt-6">
+              <div className="mt-auto space-y-2 pt-6">
                 <Link to={`/appointment?purpose=${encodeURIComponent(s.purpose)}`} className="btn btn-primary w-full">Book this service <ArrowRight size={16} /></Link>
+                <Link to={`/about#service-${s.id}`} className="btn btn-ghost w-full">What is this service?</Link>
               </div>
             </article>
           );

@@ -19,6 +19,9 @@ export const durationMinutes = (v) => {
   return d;
 };
 
+// The longer explanation shown on the About Us page. Paragraphs are separated by a blank line.
+export const detailsText = (v) => text(v, 'Detailed description', { max: 2000, optional: true, multiline: true }) || '';
+
 export function parseNewService(raw) {
   const b = asBody({ body: raw });
   const grp = oneOf(b.grp, GROUPS, 'group');
@@ -31,6 +34,7 @@ export function parseNewService(raw) {
     duration_minutes: durationMinutes(b.duration_minutes),
     summary: text(b.summary, 'Summary', { max: 500, optional: true }) || '',
     note: text(b.note, 'Note', { max: 500, optional: true }) || '',
+    details: detailsText(b.details),
     employee_ids: employeeIds,
   };
 }
@@ -46,6 +50,7 @@ export function parseServicePatch(raw) {
   if (b.is_active !== undefined) out.is_active = bool(b.is_active, 'Active') ? 1 : 0;
   if (b.summary !== undefined) out.summary = text(b.summary, 'Summary', { max: 500, optional: true }) || '';
   if (b.note !== undefined) out.note = text(b.note, 'Note', { max: 500, optional: true }) || '';
+  if (b.details !== undefined) out.details = detailsText(b.details);
   if (!Object.keys(out).length) throw new HttpError(400, 'Nothing to update');
   return out;
 }

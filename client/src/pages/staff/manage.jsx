@@ -195,22 +195,23 @@ function serviceProblem(d) {
   if (name.length > 120 || !SERVICE_NAME_RE.test(name)) return 'The service name can only contain letters, numbers, spaces and / & ( ) . , \' - (up to 120 characters).';
   const mins = Number(d.duration);
   if (!Number.isInteger(mins) || mins < 5 || mins > 240 || mins % 5) return 'The visit length must be 5 to 240 minutes, in steps of 5.';
-  if (d.summary.length > 500 || d.note.length > 500) return 'The description and the note can each be up to 500 characters.';
+  if (d.summary.length > 500 || d.note.length > 500) return 'The short description and the note can each be up to 500 characters.';
+  if ((d.details || '').length > 2000) return 'The detailed description can be up to 2000 characters.';
   return '';
 }
 
 function ServiceCard({ s, reload, setErr, setOk }) {
   const locked = s.purpose === 'Others'; // the booking forms use this one to ask for a custom reason
-  const [d, setD] = useState({ purpose: s.purpose, grp: s.grp, icon: s.icon, summary: s.summary || '', note: s.note || '', duration: String(s.duration_minutes) });
+  const [d, setD] = useState({ purpose: s.purpose, grp: s.grp, icon: s.icon, summary: s.summary || '', note: s.note || '', details: s.details || '', duration: String(s.duration_minutes) });
   const [item, setItem] = useState({ label: '', kind: 'mandatory' });
   const set = (k, v) => setD((p) => ({ ...p, [k]: v }));
-  const changed = d.purpose !== s.purpose || d.grp !== s.grp || d.icon !== s.icon || d.summary !== (s.summary || '') || d.note !== (s.note || '') || Number(d.duration) !== s.duration_minutes;
+  const changed = d.purpose !== s.purpose || d.grp !== s.grp || d.icon !== s.icon || d.summary !== (s.summary || '') || d.note !== (s.note || '') || d.details !== (s.details || '') || Number(d.duration) !== s.duration_minutes;
 
   const patch = async (body, msg) => { setErr(''); setOk(''); try { await api(`/services/${s.id}`, { method: 'PATCH', body }); setOk(msg); reload(); } catch (e) { setErr(e.message); } };
   const saveDetails = () => {
     const problem = serviceProblem(d);
     if (problem) { setOk(''); return setErr(problem); }
-    patch({ purpose: d.purpose.trim(), grp: d.grp, icon: d.icon, summary: d.summary.trim(), note: d.note.trim(), duration_minutes: Number(d.duration) }, `${d.purpose.trim()} saved. Changes apply to new bookings and to the home page.`);
+    patch({ purpose: d.purpose.trim(), grp: d.grp, icon: d.icon, summary: d.summary.trim(), note: d.note.trim(), details: d.details.trim(), duration_minutes: Number(d.duration) }, `${d.purpose.trim()} saved. Changes apply to new bookings and to the home page.`);
   };
   const remove = async () => {
     if (!window.confirm(`Delete "${s.purpose}"?\n\nThis removes the service, its document checklist and its staff assignments. Past appointments keep the service name. This cannot be undone.\n\nTo hide it without deleting, switch off "Open for booking" instead.`)) return;
@@ -253,6 +254,11 @@ function ServiceCard({ s, reload, setErr, setOk }) {
               <textarea id={`pt${s.id}`} rows={2} maxLength={500} className="input" placeholder="Optional. Anything visitors should know, such as a reminder or a limit" value={d.note} onChange={(e) => set('note', e.target.value)} />
               <p className="mt-1 text-xs text-ink/55">{d.note.length}/500. Shown at the bottom of the home page card and read by the chatbot. Leave empty for no note.</p>
             </div>
+            <div className="md:col-span-2">
+              <label className="label" htmlFor={`pd${s.id}`}>Detailed description</label>
+              <textarea id={`pd${s.id}`} rows={8} maxLength={2000} className="input" placeholder="Explain in plain language what this service is, who needs it, and how it differs from similar services. Leave a blank line between paragraphs." value={d.details} onChange={(e) => set('details', e.target.value)} />
+              <p className="mt-1 text-xs text-ink/55">{d.details.length}/2000. Shown on the About Us page (the card on the home page links there) and read by the chatbot. Have the registrar check what you write.</p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <button className="btn btn-primary" disabled={!changed} onClick={saveDetails}>Save details</button>
@@ -276,7 +282,7 @@ function ServiceCard({ s, reload, setErr, setOk }) {
 }
 
 function AddService({ employees, reload, setErr, setOk }) {
-  const blank = { purpose: '', grp: 'Other services', icon: '', summary: '', note: '', duration: '30', employee_ids: [] };
+  const blank = { purpose: '', grp: 'Other services', icon: '', summary: '', note: '', details: '', duration: '30', employee_ids: [] };
   const [d, setD] = useState(blank);
   const [busy, setBusy] = useState(false);
   const set = (k, v) => setD((p) => ({ ...p, [k]: v }));
@@ -288,7 +294,7 @@ function AddService({ employees, reload, setErr, setOk }) {
     setBusy(true);
     try {
       await api('/services', { method: 'POST', body: {
-        purpose: d.purpose.trim(), grp: d.grp, icon: d.icon || DEFAULT_ICON[d.grp], summary: d.summary.trim(), note: d.note.trim(),
+        purpose: d.purpose.trim(), grp: d.grp, icon: d.icon || DEFAULT_ICON[d.grp], summary: d.summary.trim(), note: d.note.trim(), details: d.details.trim(),
         duration_minutes: Number(d.duration), employee_ids: d.employee_ids } });
       setOk(`${d.purpose.trim()} was added.${d.employee_ids.length ? '' : ' Nobody is assigned to it yet, so clients cannot book it. Assign staff in Employees or tick them here next time.'} Now add its document checklist below.`);
       setD(blank); reload();
@@ -311,6 +317,8 @@ function AddService({ employees, reload, setErr, setOk }) {
             <textarea id="as-sum" rows={2} maxLength={500} className="input" placeholder="One or two sentences telling visitors what this service is for" value={d.summary} onChange={(e) => set('summary', e.target.value)} /></div>
           <div className="md:col-span-2"><label className="label" htmlFor="as-note">Note (optional)</label>
             <textarea id="as-note" rows={2} maxLength={500} className="input" placeholder="Anything visitors should know" value={d.note} onChange={(e) => set('note', e.target.value)} /></div>
+          <div className="md:col-span-2"><label className="label" htmlFor="as-details">Detailed description (optional)</label>
+            <textarea id="as-details" rows={5} maxLength={2000} className="input" placeholder="Explain in plain language what this service is and who needs it. It appears on the About Us page." value={d.details} onChange={(e) => set('details', e.target.value)} /></div>
         </div>
         <fieldset>
           <legend className="label">Staff who will handle it</legend>
